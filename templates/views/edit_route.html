@@ -1,0 +1,781 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Edit Route</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css"
+          integrity="sha512-xodZBNTC5n17Xt2atTPuE1HxjVMSvLVW9ocqUKLsCC5CXdbqCmblAshOMAS6/keqq/sMZMZ19scR4PsZChSR7A=="
+          crossorigin=""/>
+
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/css/bootstrap-select.css" />
+    <!-- new line added for multiselect-->
+
+
+    <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"
+            integrity="sha512-XQoYMqMTK8LvdxXYG3nZ448hOEQiglfqkJs1NOQV44cWnUrBc8PkAOcXy20w0vlaXaVUearIOBhiXZ5V3ynxwA=="
+            crossorigin=""></script>
+
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    {#<script src="https://kit.fontawesome.com/a076d05399.js"></script>#}
+    <script src="{{ url_for('static', filename='map_utils.js') }}"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.2.0/jquery.min.js"></script>
+    <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/js/bootstrap-select.js"></script>
+    <script src="https://cdn.rawgit.com/harvesthq/chosen/gh-pages/chosen.jquery.min.js"></script>
+    <script src="https://code.jquery.com/jquery-2.2.3.min.js"></script>
+
+    <script src="https://ajax.googleapis.com/ajax/libs/jqueryui/1.10.3/jquery-ui.min.js"></script>
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/editRoute.css') }}">
+    <script src="https://unpkg.com/leaflet" type="text/javascript"></script>
+    <script src="https://unpkg.com/leaflet-ant-path" type="text/javascript"></script>
+    <script>
+        window.addEventListener('resize', function () {
+            var addExistingStopsWidth = document.querySelector('.add-Existing-Stops').offsetWidth;
+            document.querySelector('.add-Existing-Stops .bootstrap-select').style.width = addExistingStopsWidth + 'px';
+        });
+        
+        window.dispatchEvent(new Event('resize'));
+        
+    </script>
+</head>
+<body>
+    <nav class="navbar navbar-default">
+      <div class="container-fluid">
+         {#<div class="navbar-header">#}
+              {#<span class="navbar-brand">Direction Visualiser</span>#}
+          {#</div>#}
+          <ul class="nav navbar-nav navbar-right">
+              
+              <li><a href="{{ url_for('index') }}">Home</a></li>
+
+          </ul>
+      </div>
+    </nav>
+
+    {% for message in get_flashed_messages()%}
+        <div class="alert alert-success alert-dismissible text-center fade in" style="position: fixed; left: 50%; transform: translate(-50%, -50%); z-index:10 ;">
+            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+            <strong>{{message}}</strong>
+        </div>
+    {% endfor %}
+
+    <div class="container-fluid" style="padding: 0px 120px 0px">
+        <div class="row" style="margin-top: 12px">
+            <div>
+                <h4 style="display: inline;">Route:</h4> <span>{{ route_name }} </span>
+                    <div>
+                        <button type="button" class="btn btn-success" id = "viewStop" onclick="frameOne()" style="display: none;">View Stops</button>
+                        <button type="button" class="btn btn-success" id = "newStop" onclick="myFunction()" style="display: inline-block;">ADD New Stop</button> 
+                        <button type="button" onClick = "cancel_route()"id='cancel' class="btn btn-danger" style="float: right; margin-right: 10px;">Cancel</button>  
+                        <button type="button" onClick = "save_route()" id='save' style="float: right; margin-right: 10px;" class="btn btn-success">Save Route</button>   
+                    </div>
+            </div>
+         </div>
+        
+        
+        <div class="row" style="margin-top: 25px;" >
+
+            <div class="col-sm-7" id="mapid" style="height: 500px;">
+            </div>
+                
+                <div class="col-sm-5" style="display:true; float: right;" id = "mainFrameOne">
+                    <div class="input-group" style="margin-bottom: 10px;">
+                        <input size="60" type="text" class="form-control search-bar" id="searchInput" placeholder="Search... Stop ID / Stop Name" onkeyup="searchTable()">
+                    </div>
+                    <div class="scrollable-table-container" id="checkbox-container">
+                    
+                        <table class="table table-bordered scroll" id = "sort">
+                            <thead>
+                                <tr>
+                                    <th class = "index">S.No</th>
+                                    <th class = "list">Stop ID</th>
+                                    <th>Stop Name</th>
+                                    <th>Delete stop</th>
+                                    <th>Fare stage</th>
+                                </tr>
+                            </thead>
+                        <tbody>
+                            {% for i in range(response|length) %}
+                                <tr class = "reorder">
+                                    {#<td><i class="fas fa-bars"></i></td>#}
+                                    <td class  = "index">{{ i }}</td>
+                                    <td class = "list" value = "{{ response[i][0] }}">{{ response[i][0] }}</td>
+                                    <td>{{ response[i][1] }}</td>
+                                    
+                                    {#<td><a href="/delete/{{route_id}}/{{response[i][1]}}" type="button" class="btn btn-outline-dark btn-sm mx-1">Delete</button>#}
+                                    <td><a href="{{url_for('delete',route_id = route_id,stop_id =response[i][0])}}" type="button" class="btn btn-outline-dark btn-sm mx-1">Delete</button>
+
+                                    <td><input type="checkbox" name="name2" value = {{response[i][4]}} id = "{{ response[i][0] }}"/></td>
+                                </tr>
+                            {% endfor %}
+                        
+                        </tbody>
+                        </div>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- for Add new Stop -->
+                <div style="display:none" id = "mainFrameTwo">
+                    <div class="col-sm-2 tb1 add-Existing-Stops">
+                        <label class="my-1 mr-2" for="inlineFormCustomSelectPref">ADD Existing Stop</label>
+
+                        <select  onchange="getOption()" data-live-search="true" data-live-search-style="true" class="selectpicker" name = 'm' id = "myOptions" multiple>
+                            {% for i in stops_dict %}
+                            <option value= "{{stops_dict[i]}}" >{{stops_dict[i][1]}}:{{stops_dict[i][0]}}</option>
+                            {% endfor %}
+                        </select>  
+                        <form class="form-inline" action = "{{url_for('add',route_id=route_id)}}" method = "post" id = "form1">
+                            
+                            <div class="mb-3">
+                                <input type="hidden"  name="lat1" id = "lat_name1" required>
+                                <input type="hidden"  name="long1" id = "long_name1" required>
+                            </div>
+    
+                            <div class="mb-3">
+                                <label class="my-1 mr-2">Stop Name</label><br>
+                                <input type="text"  name="stop_name1" id = "id_stop_name1" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="my-1 mr-2">Stop ID</label><br>
+                                <input type="text"  name="stop_id1" id = "id_stop_id1" required>
+                            </div>
+                            
+                            <button style="margin: 12px 0;" type="submit" class="btn btn-primary my-1" id = "submit1">Submit</button>
+                        </form>
+                    </div>
+
+                    <div class="col-sm-2 tb1 add-new-Stop">
+
+                        <label class="my-1 mr-2" for="inlineFormCustomSelectPref">ADD New Stop</label>
+                        <form class="form-inline" action =  "{{url_for('new_add',route_id=route_id)}}" method = "post" id = "form2" onsubmit="return validateForm2()">
+
+                            <div class="mb-3">
+                                <label class="my-1 mr-2">Stop Latitude</label><br>
+                                <input type="text"  name="lat" id = "lat_name" required>
+                            </div>
+    
+                            <div class="mb-3">
+                                <label class="my-1 mr-2">Stop Longitude</label><br>
+                                <input type="text"  name="long" id = "long_name" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label class="my-1 mr-2">Stop Name</label><br>
+                                <input type="text"  name="stop_name" id = "stop_name2" required>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <input style="margin-top: 10px;" type="radio" id="default_id" name="set_stop_id" value="default_id" onclick="defaultId();">
+                                <label  onmouseover="call_tooltip1();">Stop ID(Default)</label>
+                                <span  style = 'visibility: hidden; display:none; background-color:  #EEE8AA; color: #800000;text-align: center;padding: 5px 0;border-radius: 6px;' id='tool_tip1'> If present maximum Stop ID = 1233<br> Then new Stop ID = 1234 </span>
+                            </div>
+                            <div class="mb-3">
+
+                                <input type="radio" id="set_id" name="set_stop_id" value="set_id" onclick="defaultId();">
+                                <label onmouseover="call_tooltip2();">Stop ID(Manually)</label>
+
+
+                                <div id="set_stopid" style="display:none">
+                                    <input type="text"  name="new_stop_id" id='new_stop_id' value='Stop ID'><br>
+                                </div>
+                            </div>
+
+                            <button style="margin: 10px 0 10px" type="submit" class="btn btn-primary my-2" id = "submit2">Submit</button>
+                            
+                        </form>
+                    </div>
+                <!-- 
+                <label class="my-1 mr-2" for="inlineFormCustomSelectPref">Change stop Location</label>
+
+                <form class="form-inline" action =  "{{url_for('change_location',route_id=route_id)}}" method = "post" id = "form3">
+                    <div class="mb-3">
+                    <label class="my-1 mr-2">Stop latitude</label><br>
+                    <input type="text"  name="lat2" id = "lat_name2">
+                    </div>
+                    <div class="mb-3">
+                    <label class="my-1 mr-2">Stop longitude</label><br>
+                    <input type="text"  name="long2" id = "long_name2">
+                    </div>
+                    <div class="mb-3">
+                        <label class="my-1 mr-2">Stop id</label><br>
+                        <input type="text"  name="stop_id2" id = "stop_id2">
+                    </div>
+
+                
+                    <button type="submit" class="btn btn-primary my-2" id = "submit3">Submit</button>
+                </form>
+                -->
+                
+                
+                </div>
+        
+        </div>
+
+<script>
+    
+    let mymap = L.map('mapid').setView([28.6304, 77.2177], 13);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 18,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+    }).addTo(mymap);
+
+    var greenIcon = new L.Icon({
+        iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+        shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+        iconSize: [25, 41],
+        iconAnchor: [12, 41],
+        popupAnchor: [1, -34],
+        shadowSize: [41, 41]
+      });
+
+    
+    
+    route_markers = [];
+    r = [];
+    
+    var latlngs = [];
+    var mark = [];
+    var polyline = 0;
+    var points_len = {{points_len}}
+    
+    if (points_len !=0 ) {
+        mymapplot();
+    }
+
+    function getvale2(e) {  // function to get  selected icons value
+        var z = e.latlng.lat
+        var k = e.latlng.lng
+        //console.log("icon values",z,k)
+        item_orders = []
+        item_orders.push(z)
+        item_orders.push(k)
+        var order_strings = item_orders.toString();
+        console.log(order_strings)
+
+
+        $.ajax({
+            method: "POST",
+            //: "/updateList/"+{{ route_id }},
+            url: "{{ url_for('find_buses_within_radius') }}",
+    
+            data: order_strings,
+            data : JSON.stringify({'data': order_strings}),
+            contentType : "application/json",
+            cache: false,
+            success: function(res){    
+                //var item = new Array();
+                var itms = res.coord_response
+                var pts_list  = res.coord_points
+                received_msg(itms,pts_list)
+                //points_list = res.points;
+                //mymapplot2(item,points_list);
+            }
+            
+        }); 
+    }   
+
+   function received_msg(itms,pts_list){
+       console.log(itms)
+       console.log(pts_list.length)
+       var myRenderer = L.canvas({ padding: 0.5 });
+
+       for(var i = 0; i < pts_list.length; i++){
+            point_data = pts_list[i]
+            stop_coords = [point_data[0], point_data[1]];
+
+            latlngs.push(stop_coords);
+
+            marker=L.circleMarker(stop_coords, {
+                renderer: myRenderer,
+                title:itms[i][3],
+                id:itms[i][0]
+            }).addTo(mymap);
+
+            marker.setStyle({color: 'green'});
+            marker.bindPopup(itms[i][0]+' : '+itms[i][3]);
+            marker.bindTooltip(itms[i][0]+' : '+itms[i][3],permanent=false);
+            marker.on('click', onMapClick2);
+
+            function onMapClick2(e){
+                
+                console.log('marker is clicked',this.options.id,this.options.title)
+                document.getElementById("lat_name1").value= e.latlng.lat            
+                document.getElementById("long_name1").value= e.latlng.lng
+                document.getElementById("id_stop_name1").value = this.options.title
+                document.getElementById("id_stop_id1").value = this.options.id
+
+                document.getElementById("lat_name2").value= e.latlng.lat            
+                document.getElementById("long_name2").value= e.latlng.lng
+                //document.getElementById("id_stop_name1").value = this.options.title
+                document.getElementById("stop_id2").value = this.options.id
+            
+               }
+            
+            
+   }
+   
+} // received_msg ends here
+
+
+function onMapClick3(e){
+                
+    
+    document.getElementById("lat_name2").value= e.latlng.lat            
+    document.getElementById("long_name2").value= e.latlng.lng
+    //document.getElementById("id_stop_name1").value = this.options.title
+    document.getElementById("stop_id2").value = this.options.id
+
+   }
+
+function mymapplot(){ // function to plot blue icons
+    
+
+    {% for i in range(points|length) %}
+
+        point_data = {{ points[i][1:] }}
+        stop_coords = [point_data[0], point_data[1]];
+        latlngs.push(stop_coords);
+        marker = L.marker(
+            stop_coords, {
+                title:"{{response[i][1]}}",
+                id:"{{response[i][0]}}",
+               draggable: false
+            }).addTo(mymap);
+        marker.bindPopup('{{i}}'+' : '+'{{response[i][1]}}'+' : '+'{{response[i][0]}}');
+        marker.bindTooltip('{{i}}'+' : '+'{{response[i][1]}}'+' : '+'{{response[i][0]}}',permanent=false);
+        marker.on('click', onMapClick3);
+
+        //marker.on('click', getvale2);
+
+        //marker.on('dragend', function (e) {
+        //    console.log(marker.getLatLng().lat, marker.getLatLng().lng);
+        //});
+        route_markers[point_data[0]] = marker;
+        mark.push(marker);
+
+        
+    {% endfor %}
+
+    
+    polyline = L.polyline.antPath(latlngs, {
+        "delay": 249,
+        "dashArray": [
+            10,
+            20
+        ],
+        "color": "blue",
+        "weight": 5,
+        "smoothFactor": 1,
+        "pulseColor": "#FFFFFF",
+        "paused": false,
+        "reverse": false,
+        "hardwareAccelerated": true,
+        });
+    mymap.addLayer(polyline);  
+    mymap.fitBounds(polyline.getBounds());
+
+    
+}// function ends here
+
+function mymapplot2(item,points_list){  // new function to plot map
+    console.log("yes")
+
+    for(var i = 0; i < mark.length; i++){  //remove prev points
+        mymap.removeLayer(mark[i]);
+    }
+
+    mymap.removeLayer(polyline); //remove polyline
+
+    latlngs = [];
+    mark = [];
+    
+    console.log('new latlngs',latlngs);
+    console.log('new mark',mark);
+
+    for(var i = 0; i < points_list.length; i++){
+        point_data = points_list[i]
+        stop_coords = [point_data[1], point_data[2]];
+        latlngs.push(stop_coords);
+        
+        marker = L.marker(
+            stop_coords, {
+            title:item[i][1],
+            id:item[i][0],
+            draggable: false,
+            icon: greenIcon
+            }).addTo(mymap);
+        marker.bindPopup(i+' : '+item[i][1]);
+        marker.bindTooltip(i+' : '+item[i][1],permanent=false);
+        marker.on('click', onMapClick3);
+
+        marker.on('dragend', function (e) {
+        console.log(marker.getLatLng().lat, marker.getLatLng().lng);
+    });
+    route_markers[point_data[0]] = marker;
+    mark.push(marker);
+        
+        
+    }//for loop ends here
+    polyline = L.polyline.antPath(latlngs, {
+        "delay": 249,
+        "dashArray": [
+            10,
+            20
+        ],
+        "color": "blue",
+        "weight": 5,
+        "smoothFactor": 1,
+        "pulseColor": "#FFFFFF",
+        "paused": false,
+        "reverse": false,
+        "hardwareAccelerated": true,
+        });
+    mymap.addLayer(polyline);
+    mymap.fitBounds(polyline.getBounds());
+
+} //2nd function
+
+    function frameOne(){
+        document.getElementById("mainFrameOne").style.display="block";
+        document.getElementById("newStop").style.display="inline-block";
+        document.getElementById("viewStop").style.display="none";
+        document.getElementById("mainFrameTwo").style.display="none"; 
+        document.getElementById('save').style.display = "block";
+        document.getElementById('cancel').style.display = "block";
+    }
+   function myFunction() { 
+	console.log('yes')
+    document.getElementById("viewStop").style.display="block";
+    document.getElementById("newStop").style.display="none";
+    document.getElementById("mainFrameOne").style.display="none";
+    document.getElementById("mainFrameTwo").style.display="block"; 
+    document.getElementById('save').style.display = "none";
+    document.getElementById('cancel').style.display = "none";
+    var popup = L.popup();
+
+    function onMapClick(e) {
+        //alert(e.latlng.lat);
+        document.getElementById("lat_name").value = e.latlng.lat.toString()
+        document.getElementById("long_name").value = e.latlng.lng.toString()
+        popup
+            .setLatLng(e.latlng)
+            .setContent("stop location  at " + e.latlng.toString())
+            .openOn(mymap);
+
+        getvale2(e)
+    }   
+
+    mymap.on('click', onMapClick);
+}
+
+
+
+
+var fixHelperModified = function(e, tr) {
+    var $originals = tr.children();
+    var $helper = tr.clone();
+    $helper.children().each(function(index) {
+        $(this).width($originals.eq(index).width())
+    });
+    return $helper;
+},
+
+    updateIndex = function(e, ui) {
+        $('td.index', ui.item.parent()).each(function (i) {
+            $(this).html(i);
+        });
+        item_order = [];
+        $('td.list', ui.item.parent()).each(function (i) {
+            item_order.push($(this).attr("value"));
+            console.log($(this).attr('value'));
+        });
+        console.log("items",item_order);
+        var order_string = item_order.toString();
+
+
+        $.ajax({
+        method: "POST",
+        //: "/updateList/"+{{ route_id }},
+        url: "{{ url_for('updateList', route_id=route_id) }}",
+        
+        data: order_string,
+        data : JSON.stringify({'data': order_string}),
+        contentType : "application/json",
+        cache: false,
+        success: function(res){    
+            var item = new Array();
+            item = res.response
+            points_list = res.points;
+            mymapplot2(item,points_list);
+        }
+        
+    });                        
+                                
+    };                
+
+$("#sort tbody").sortable({
+    helper: fixHelperModified,
+    stop: updateIndex,           
+}).disableSelection();
+    
+var form1 = $('#form1');
+var submit1 = $('#submit1');
+
+form1.submit(function(e) {
+    //alert('hey1');
+    // prevent default action
+    //e.preventDefault();
+    // send ajax request
+
+});
+
+
+var form2 = $('#form2');
+var submit2 = $('#submit2');
+
+form2.submit(function(e) {
+    //console.log(e)
+    // prevent default action
+    // send ajax request
+
+});
+var form3 = $('#form3');
+var submit3 = $('#submit3');
+
+form3.submit(function(e) {
+    //alert('hey3');
+    //console.log(e)
+    // prevent default action
+    // send ajax request
+
+});
+
+// it is call when to show stops on map from selected list
+var prev = ''
+var prevlist = []
+function getvale(e) {  // function to get  selected icons value
+    //alert(e.latlng.lat);
+   // alert("hi. you clicked the marker at " + e.latlng);
+    //alert(" of marker: " + this.options.stop_id);
+   // alert("name: " + this.options.stop_name);
+   document.getElementById("lat_name1").value= e.latlng.lat
+   document.getElementById("long_name1").value= e.latlng.lng
+    document.getElementById("id_stop_name1").value = this.options.stop_name
+
+    document.getElementById("id_stop_id1").value = this.options.stop_id
+    console.log(e.latlng.lat,e.latlng.lng)
+}   
+
+function getOption() {
+    
+    console.log('list of old values',prevlist)
+    //var value1 = eval(document.getElementById('myOptions').value)
+    var values = $('#myOptions').val();
+
+    //$('#myOptions').find('option').not(':selected').each(function(k,v){
+       // console.log(k,v.text, v.value);
+    //});
+    var len = values.length
+    var plot_value =  eval(values[len-1])
+    console.log("list of new values2: ",values)
+    prev += values
+    prevlist = eval(prev)
+
+    //console.log("values2",plot_value)
+
+
+    console.log(plot_value[0]);
+    stop_coords = [plot_value[2],plot_value[3]];
+    marker = L.marker(
+            stop_coords,
+            {
+                stop_id: plot_value[0],
+                stop_name: plot_value[1],
+                icon: greenIcon
+            }).addTo(mymap);
+        marker.bindPopup(plot_value[0]+" : "+plot_value[1]);
+        marker.on('click', getvale);
+        
+
+        
+        }
+    var checkboxValues = JSON.parse(localStorage.getItem('checkboxValues')) || {},
+    $checkboxes = $("#checkbox-container :checkbox");
+    
+    $checkboxes.on("change", function(){
+      $checkboxes.each(function(){
+        checkboxValues[this.id] = this.checked;
+      });
+      
+      localStorage.setItem("checkboxValues", JSON.stringify(checkboxValues));
+      console.log(checkboxValues)
+
+    });
+    
+    // On page load
+    $.each(checkboxValues, function(key, value) {
+      $("#" + key).prop('checked', value);
+    });
+
+        
+//$('#myOptions').change(function() {
+    //var val = $("#myOptions option:selected").text();
+    //alert(val);
+    //console.log(val)
+//});
+function clear_storage(){
+    
+    localStorage.removeItem(checkboxValues);
+    console.log(checkboxValues)
+
+};
+
+function cancel_route(){
+    let url = "{{ url_for('view_route', route_id=route_id) }}";
+    window.location.href = url;
+}
+
+function save_route(){
+    $.ajax({
+        method: "POST",
+        //url: "/save_route/"+{{ route_id }},
+        url:"{{url_for('save_route',route_id=route_id)}}",
+        //data: order_string,
+        data : JSON.stringify({'data': checkboxValues}),
+        contentType : "application/json",
+        cache: false,
+        success: function(){    
+            console.log('ajax is called')
+            window.location.href =  "{{ url_for('view_route', route_id=route_id) }}";
+        }
+        
+    });        
+}
+
+function defaultId() {
+    if (document.getElementById('set_id').checked) {
+
+        //if ( document.querySelector('input[name="default_id"]:checked').checked == true)
+        //{
+           // document.querySelector('input[name="default_id"]:checked').checked = false;
+       
+        document.getElementById('set_stopid').style.display = "block";
+
+        console.log("set stop id manually");
+        //document.querySelector('input[name="set_id"]:checked').checked = false;
+
+
+
+    }
+
+    else if (document.getElementById('default_id').checked)
+    {
+
+    document.getElementById('set_stopid').style.display = 'none';
+    console.log("set default stop id");
+
+    }
+
+    
+}
+
+function call_tooltip1(){
+    
+    document.getElementById('tool_tip1').style.visibility='visible';
+    document.getElementById('tool_tip1').style.display='block';
+}
+function call_tooltip2(){
+    document.getElementById('tool_tip2').style.visibility='visible';
+}
+function validateForm2() {
+    console.log("form is validated")
+  var a = document.getElementById('lat_name').value;
+  var b = document.getElementById('long_name').value;
+  var c = document.getElementById('stop_name2').value;
+  var d = document.getElementById('new_stop_id').value;
+  if (!a && !b && !c && !d) {
+     alert("Please Fill All Required Fields");
+      return false;
+    }
+
+  var radio_button1 = document.getElementById('default_id').checked;
+  var radio_button2 = document.getElementById('set_id').checked;
+
+  if (!radio_button1){
+    console.log(document.getElementById('new_stop_id').value)
+    if (document.getElementById('new_stop_id').value == ''){
+        alert("Please select anyone radio button");
+        return false;
+
+
+    }
+    
+  }
+
+  //if (document.getElementById('new_stop_id').value != 'empty'){
+    //document.querySelector('input[name="set_id"]:checked').checked = true;
+ //}
+
+
+}
+
+
+    function searchTable() {
+        // Declare variables
+        var input, filter, table, tbody, tr, td, i, j, visible;
+        input = document.getElementById("searchInput");
+        filter = input.value.toUpperCase();
+        table = document.getElementById("sort");
+        if (table) {
+            tbody = table.getElementsByTagName("tbody")[0];
+            tr = tbody.getElementsByTagName("tr");
+
+            // Loop through all table rows
+            for (i = 0; i < tr.length; i++) {
+                visible = false;
+
+                // Loop through all columns in the current row
+                for (j = 0; j < 3; j++) {
+                    td = tr[i].cells[j];
+                    
+                    // Check if the column is S.No or Stop ID
+                    if (j === 0 || j === 1) {
+                        // If the column value starts with the search input
+                        if (td) {
+                            var cellValue = td.innerHTML.trim().toUpperCase();
+                            if (cellValue.indexOf(filter) === 0) {
+                                visible = true;
+                                break;
+                            }
+                        }
+                    } else {
+                        // For Stop Name column, use the original search behavior
+                        if (td) {
+                            if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                                visible = true;
+                                break;
+                            }
+                        }
+                    }
+                }
+
+                // Set row visibility based on match
+                tr[i].style.display = visible ? "" : "none";
+            }
+        }
+    }
+</script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-MrcW6ZMFYlzcLA8Nl+NtUVF0sA7MsXsP1UyJoMp4YLEuNSfAP+JcXn/tWtIaxVXM" crossorigin="anonymous"></script>
+
+
+</body>
+</html>

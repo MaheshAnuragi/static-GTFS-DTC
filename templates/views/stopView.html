@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Route Visualiser - View route</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/stopView.css') }}">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+     integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+     crossorigin=""/>
+     <!-- Make sure you put this AFTER Leaflet's CSS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo="
+    crossorigin=""></script>
+
+    <script src='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/Leaflet.fullscreen.min.js'></script>
+    <link href='https://api.mapbox.com/mapbox.js/plugins/leaflet-fullscreen/v1.0.1/leaflet.fullscreen.css' rel='stylesheet' />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet-control-custom/dist/L.Control.Custom.css" />
+    <script src="https://cdn.jsdelivr.net/npm/leaflet-control-custom/dist/L.Control.Custom.js"></script>
+    <script src="{{ url_for('static', filename='js/stopView.js') }}"></script>
+</head>
+<body>
+
+   <nav class="navbar navbar-default">
+      <div class="container-fluid">
+          <ul class="nav navbar-nav navbar-right">
+              <li><a href="{{ url_for('index') }}">Home</a></li>
+          </ul>
+      </div>
+    </nav>
+    
+    {% for message in get_flashed_messages()%}
+        <div class="alert alert-success alert-dismissible text-center fade in" style="position: fixed; left: 50%; transform: translate(-50%, -50%);">
+            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+            <strong>{{message}}</strong>
+        </div>
+    {% endfor %}
+
+    <div class="container-fluid" style="padding: 0px 100px 10px">
+        <div class="row" style="margin-top: 12px">
+            <div class="col-sm-6">
+                <button type="button" class="btn btn-success" id = "viewStop" onclick="frameOne()" style="display: none;">View Stops</button>
+                <button type="button" class="btn btn-success" id = "newStop" onclick="myFunction()" style="display: inline-block;">Edit Stops</button>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 25px;" >
+            <div class="col-sm-7" id="map" style="height: 500px;"></div>
+
+            <div class="col-sm-5" style="display:true; float: right;" id = "mainFrameOne">
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <input size="60" type="text" class="form-control search-bar" id="searchInput" placeholder="Search... Stop ID / Stop Name / Stop Lat-Long" onkeyup="searchTable()">
+                </div>
+                <div class="scrollable-table-container">
+                    <table class="table table-bordered" id="dataTable">
+                        <thead>
+                            <tr>
+                                <!--<th>S.No</th>-->
+                                <th>Delete</th>
+                                <th>Stop ID</th>
+                                <th>Stop Name</th>
+                                <th>Stop Latitude</th>
+                                <th>Stop Longitude</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for i in range(response|length) %}
+                            <tr>
+                                <!--<td>{{ i }}</td>-->
+                                <td>
+                                    <form class="delete-form" action="{{ url_for('delete_stop', stop_id= response[i][0] |urlencode) }}" method="POST">
+                                        <div class="cross" onclick="removeButton(event)">X</div>
+                                    </form>
+                                </td>
+                                <td>{{ response[i][0] }}</td>
+                                <td>{{ response[i][1] }}</td>
+                                <td>{{ response[i][2] }}</td>
+                                <td>{{ response[i][3] }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- for Add new Stop -->
+            <div style="display:none;" id = "mainFrameTwo"> 
+                <div class="col-sm-2 tb1 change-location">
+                    <label class="my-1 mr-2">Change Stop Location</label>
+
+                    <form class="form-inline" action="/stops_change" method = "post" id = "form3">
+                        <div class="mb-3">
+                        <label class="my-1 mr-2">Stop Latitude</label><br>
+                        <input type="text"  name="lat_name2" id = "lat_name2" required>
+                        </div>
+                        <div class="mb-3">
+                        <label class="my-1 mr-2">Stop Longitude</label><br>
+                        <input type="text"  name="long_name2" id = "long_name2" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="my-1 mr-2">Stop ID</label><br>
+                            <input type="text"  name="stop_id2" id = "stop_id2" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="my-1 mr-2">Stop Name</label><br>
+                            <input type="text"  name="stop_name2" id = "stop_name2" required>
+                        </div>
+                        
+                        <button style="margin: 12px 0;" type="submit" class="btn btn-primary my-2" id = "submit3">Submit</button>
+                    </form>
+                </div>
+                
+                <div class="col-sm-2 tb1 add-trip">
+                    <label class="my-1 mr-2">Add New Stop</label>
+                    <form class="form-inline" action="/stops_add" method = "post" id = "form2">
+                        <div class="mb-3">
+                            <label class="my-1 mr-2">Stop Latitude</label><br>
+                            <input type="text"  name="lat_name" id = "lat_name">
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="my-1 mr-2">Stop Longitude</label><br>
+                            <input type="text"  name="long_name" id = "long_name">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="my-1 mr-2">Stop Name</label><br>
+                            <input type="text"  name="stop_name" id = "stop_name">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <input type="radio" id="default_id" name="set_stop_id" value="default_id" onclick="defaultId();">
+                            <label>Stop ID (Default)</label>
+                            <!--
+                                <span  style = 'visibility: hidden; display:none; background-color:  #EEE8AA; color: #800000;text-align: center;padding: 5px 0;border-radius: 6px;' id='tool_tip1'> If present maximum Stop ID = 1233<br> Then new Stop ID = 1234 </span>
+                            -->
+                            </div>
+                        <div class="mb-3">
+                            <input type="radio" id="set_id" name="set_stop_id" value="set_id" onclick="defaultId();">
+                            <label>Stop ID (Manually)</label>
+                            <div id="set_stopid" style="display:none">
+                                <input type="text"  name="new_stop_id" id='new_stop_id' placeholder='Stop ID'><br>
+                            </div>
+                        </div>
+
+                        <button style="margin: 10px 0 10px" type="submit" class="btn btn-primary my-2" id = "submit2">Submit</button>
+
+                    </form>
+                </div>
+                
+            </div>
+
+        </div>
+    </div>
+    
+    
+
+    <script>
+        // Function to initialize the map
+        function initMap() {
+            // Create a new Leaflet map centered at a specific location
+            var map = L.map('map').setView([28.630691, 77.217648], 11);
+
+            // Add the OpenStreetMap tile layer to the map
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors',
+                maxZoom: 20,
+            }).addTo(map);
+            
+            // Create the fullscreen control instance
+            var fullscreenControl = L.control.fullscreen({
+                position: 'bottomleft', // Position of the fullscreen button
+                title: 'Full Screen', // Button title
+                titleCancel: 'Exit Full Screen' // Title when in full-screen mode
+            });
+
+            // Add the fullscreen control to the map
+            map.addControl(fullscreenControl);
+
+
+            // Create a custom control
+            var customControl = L.Control.extend({
+                onAdd: function(map) {
+                var container = L.DomUtil.create('div', 'custom-control');
+                container.innerHTML = 'Latitude: <span id="latitude"></span><br>Longitude: <span id="longitude"></span><br>Stop ID: <span id="stop-id"></span>';
+                return container;
+                },
+            });
+            
+            // Add the custom control to the map
+            var control = new customControl({ position: 'topright' });
+
+            // Function to create and add the custom control
+            function addCustomControl() { 
+                map.addControl(control);
+                //control.addTo(map); // Add the control to the map
+                //control.getContainer().style.display = 'block'; // Show the control
+            }
+
+            // Function to remove the custom control
+            function removeCustomControl() {
+                // Remove the custom control from the map
+                map.removeControl(control);
+                //control.addTo(map);
+                //control.getContainer().style.display = 'none'; // Hide the control
+            }
+
+            // Event listener for fullscreenchange event
+            map.on('fullscreenchange', function() {
+                if (map.isFullscreen()) {
+                    addCustomControl(); // Add the custom control when in fullscreen mode
+                } else {
+                    removeCustomControl(); // Remove the custom control when not in fullscreen mode
+                }
+            });
+
+            // Create an empty bounds object
+            var bounds = L.latLngBounds();
+
+            // Define variables for the form inputs
+            var stopIdInput = document.getElementById('stop_id2');
+            var latInput = document.getElementById('lat_name2');
+            var longInput = document.getElementById('long_name2');
+            var stopNameInput = document.getElementById('stop_name2');
+            var latInput2 = document.getElementById('lat_name');
+            var longInput2 = document.getElementById('long_name');
+            var lastStopName = null;
+            var lastStopId = null;
+            var currentMarker = null;
+
+            // Function to update the form inputs
+            function updateFormInputs(stopName,stopId, stopLat, stopLon) {
+                stopIdInput.value = stopId;
+                stopNameInput.value = stopName;
+                latInput.value = stopLat;
+                longInput.value = stopLon;
+                latInput2.value = stopLat;
+                longInput2.value = stopLon;
+            }
+
+            // Function to handle map click event
+            function handleMapClick(e) {
+                var lat = e.latlng.lat;
+                var lon = e.latlng.lng;
+
+                // Remove the previous marker, if exists
+                if (currentMarker) {
+                    map.removeLayer(currentMarker);
+                }
+
+                // Create a new marker at the clicked location
+                currentMarker = L.circleMarker([lat, lon], {
+                    radius: 6,
+                    color: '#000000',
+                    fill: true,
+                    fillColor: 'red',
+                    fillOpacity: 1.0,
+                    weight: 1
+                }).addTo(map);
+
+                // Update the form inputs with the clicked location
+                updateFormInputs(lastStopName,lastStopId, lat, lon);
+
+                var latitude = document.getElementById('latitude');
+                var longitude = document.getElementById('longitude');
+                var stopId = document.getElementById('stop-id');
+
+                latitude.textContent = e.latlng.lat.toFixed(6);
+                longitude.textContent = e.latlng.lng.toFixed(6);
+                stopId.textContent = lastStopId; // Replace with the logic to determine the stop ID based on the clicked location
+            }
+
+            // Function to handle circle marker click event
+            function handleCircleMarkerClick(e) {
+                lastStopId = e.target.options.stopId;
+                lastStopName = e.target.options.stopName;
+                updateFormInputs(lastStopName,lastStopId, e.target.getLatLng().lat, e.target.getLatLng().lng);
+            }
+            // Attach click event listener to the map
+            map.on('click', handleMapClick);
+
+            // Loop through the data_list and add markers to the map
+            {% for data in response %}
+                var stopId = "{{ data[0] }}";
+                var stopName = "{{ data[1] }}";
+                var stopLat = {{ data[2] }};
+                var stopLon = {{ data[3] }};
+
+                var circleMarker = L.circleMarker([stopLat, stopLon], {
+                    radius: 6,
+                    color: '#000000',
+                    fill: true,
+                    fillColor: '#90EE90',
+                    fillOpacity: 1.0,
+                    weight: 1,
+                }).addTo(map);
+
+                circleMarker.bindTooltip("Stop ID: " + stopId + "<br>Stop Name: " + stopName, {
+                    className: 'custom-tooltip'  // Apply the custom CSS class
+                });
+
+                // Extend the bounds with each stop's coordinates
+                bounds.extend([stopLat, stopLon]);
+
+                // Add click event listener to circle marker
+                circleMarker.on('click', handleCircleMarkerClick);
+
+                // Set stopId as a custom option of the circle marker
+                circleMarker.options.stopId = stopId;
+                // Set stopName as a custom option of the circle marker
+                circleMarker.options.stopName = stopName;
+            {% endfor %}
+
+            // Fit the map to the bounds
+            map.fitBounds(bounds);
+
+        }
+        
+        // Call the initMap function when the DOM is ready
+        document.addEventListener('DOMContentLoaded', initMap);
+    </script>
+
+    <script>
+        
+        function removeButton(event) {
+            if (confirm("Are you sure you want to delete this Stop?")) {
+                event.target.parentNode.submit();
+            }
+        }
+
+        function frameOne(){
+            document.getElementById("mainFrameOne").style.display="block";
+            document.getElementById("mainFrameTwo").style.display="none"; 
+            document.getElementById("newStop").style.display="inline-block";
+            document.getElementById("viewStop").style.display="none";
+        }
+
+        function myFunction(){
+            document.getElementById("mainFrameOne").style.display="none";
+            document.getElementById("mainFrameTwo").style.display="block";
+            document.getElementById("viewStop").style.display="block";
+            document.getElementById("newStop").style.display="none"; 
+        }
+
+        function searchTable() {
+            // Declare variables
+            console.log('searching...')
+            var input, filter, table, tbody, tr, td, i, j, visible;
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+            table = document.getElementById("dataTable");
+            if (table) {
+                tbody = table.getElementsByTagName("tbody")[0];
+                tr = tbody.getElementsByTagName("tr");
+    
+                // Loop through all table rows
+                for (i = 0; i < tr.length; i++) {
+                    visible = false;
+    
+                    // Loop through all columns in the current row
+                    for (j = 0; j < tr[i].cells.length; j++) {
+                        td = tr[i].cells[j];
+                        
+                        // Check if the column is S.No or Stop ID
+                        if (j === 0 || j===2 || j===3) {
+                            // If the column value starts with the search input
+                            if (td) {
+                                var cellValue = td.innerHTML.trim().toUpperCase();
+                                if (cellValue.indexOf(filter) === 0) {
+                                    visible = true;
+                                    break;
+                                }
+                            }
+                        } else if (j === 1) {
+                            // For Stop Name column, use the original search behavior
+                            if (td) {
+                                if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                                    visible = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+    
+                    // Set row visibility based on match
+                    tr[i].style.display = visible ? "" : "none";
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>

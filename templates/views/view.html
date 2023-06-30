@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Route Visualiser - View route</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.4.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/view.css') }}">
+</head>
+<body>
+
+   <nav class="navbar navbar-default">
+      <div class="container-fluid">
+          {#<div class="navbar-header">#}
+              {#<span class="navbar-brand"></span>#}
+         {# </div>#}
+          <ul class="nav navbar-nav navbar-right">
+              {#<li class="active"><a href="/">Show completed stops</a></li>#}
+              {#<li><a href="/direction">Get directions</a></li>#}
+              <li><a href="{{ url_for('index') }}">Home</a></li>
+              {#<li><a href="/new">Add new stops</a></li>#}
+              {#<li><a href="/delete">Delete stops</a></li>#}
+          </ul>
+      </div>
+    </nav>
+
+    {% for message in get_flashed_messages()%}
+        <div class="alert alert-success alert-dismissible text-center fade in" style="position: fixed; left: 50%; transform: translate(-50%, -50%); z-index:10 ;">
+            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+            <strong>{{message}}</strong>
+        </div>
+    {% endfor %}
+    
+    <div class="container-fluid" style="padding: 0px 150px 0px">
+        <div class="row">
+            <div class="col-sm-6">
+                <h4 style="display: inline;">Route:</h4> <span>{{ route_name }}</span>
+                    <button type="button" class="btn btn-success" onclick="edit()" style="display: block;">Edit Route</button>
+            </div>
+        </div>
+        <div class="row" style="margin-top: 15px; justify-content: center; align-items: center;" >
+            <div class="col-sm-8" id="map">
+                {{ map|safe }}
+            </div>
+            
+            <div class="col-sm-4">
+                <div class="input-group" style="margin-bottom: 10px;">
+                    <input size="60" type="text" class="form-control search-bar" id="searchInput" placeholder="Search... Stop ID / Stop Name" onkeyup="searchTable()">
+                </div>
+                <div class="scrollable-table-container">
+                    <table class="table table-bordered" id="dataTable">
+                        <thead>
+                            <tr>
+                                <th>S.No</th>
+                                <th>Stop ID</th>
+                                <th>Stop Name</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        {% for i in range(response|length) %}
+                            <tr>
+                                <td>{{ i+1 }}</td>
+                                <td>{{ response[i][0] }}</td>
+                                <td>{{ response[i][1] }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" style="margin-top: 10px">
+            <div class="col-sm-6">
+                <button type="button" class="btn btn-success" onclick="openTrips()">View Trips</button>
+            </div>
+        </div>
+
+
+        <div class="row" style="margin-top: 25px; justify-content: center; align-items: center; display: none;" id="tripAddView">
+            
+            <div class="col-sm-1">
+                
+                <div class="button-container">
+                    {% for time in trip_times %}
+                    <div class="button-wrapper">
+                            <form class="showTimeTable" data-trip-time="{{ time }}" data-route-id="{{ route_id }}" data-current-user="{{ current_user }}" action="{{ url_for('show_time_table', route_id=route_id, trip_time=time, current_user=current_user|urlencode) }}" method="POST">
+                                <button class="buttonClass btn btn-info" type="submit" onclick="openTimeTable()">
+                                    {{ time }}
+                            </form>
+                            <form class="delete-form" action="{{ url_for('delete_trip', route_id=route_id, trip_time=time, current_user=current_user|urlencode) }}" method="POST">
+                                <div class="cross" onclick="removeButton(event)">X</div>
+                            </form>
+                        </button>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <br>
+            </div>
+
+            <div class="col-sm-7">
+                <div style="display:none" id="openTimeTableID">
+                    <div style="float: right;">  
+                        <button class="btn btn-danger" type="submit"> Delete Trips </button>
+                    </div>
+                    <div class="input-group" style="margin-bottom: 10px;">
+                        <input size="60" type="text" class="form-control search-bar" id="searchInput2" placeholder="Search... Stop ID / Stop Name" onkeyup="searchTable2()">
+                    </div>
+                    
+                    <div class="scrollable-table-container">
+                        <table class="table table-bordered" id="dataTable2">
+                            <thead>
+                                <tr>
+                                    <th>S.No</th>
+                                    <th>Stop ID</th>
+                                    <th>Stop Name</th>
+                                    <th>Arrival Time</th>
+                                    <th>Departure Time</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody2">
+                            
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+                <br>  
+            </div>
+            
+
+            <div class="col-sm-4">
+                <button style="margin:10px" type="button" class="btn btn-success" onclick="openAddTrips()">Add Trips</button>
+                
+                <form id="addTripContainer" style="margin:10px 0; display:none" method="POST">
+                    <input type="hidden" name="route_id" value="{{ route_id }}">
+                    <input style="margin:10px 0" class="form-control" type="number" name="speed-input" id="speed-input" placeholder="Speed in Km/hr" min="0" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))" required>
+                    <input style="margin:10px 0" class="form-control" type="number" name="freq-input" id="freq-input" placeholder="Frequency in Minutes" min="0" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))" required>    
+                    <label for="start-input" class="form-label">Starting Trip:</label>
+                    <input style="margin:5px 0" class="form-control" type="time" name="start-input" id="start-input" required>
+                    <label for="end-input" class="form-label">Ending Trip:</label>
+                    <input style="margin:5px 0" class="form-control" type="time" name="end-input" id="end-input">
+                    <button type="submit" class="btn btn-primary" onclick="addButton()">Submit</button>
+                </form>
+            </div>
+
+        </div>
+    
+    </div>
+
+    <!--  for dynamically storing table  -->
+    <script>
+        function showTimeTable(event) {
+            event.preventDefault();
+          
+            var form = event.target;
+            var trip_time = form.getAttribute("data-trip-time");
+            var route_id = form.getAttribute("data-route-id");
+            var current_user = form.getAttribute("data-current-user");
+          
+            var xhr = new XMLHttpRequest();
+            xhr.onreadystatechange = function () {
+              if (xhr.readyState === XMLHttpRequest.DONE) {
+                if (xhr.status === 200) {
+                  // Handle the response here
+                  var data_list = JSON.parse(xhr.responseText);
+                  // Generate the table rows dynamically
+                  var tableBody = document.getElementById("tableBody2");
+                  tableBody.innerHTML = ""; // Clear existing rows
+          
+                  for (var i = 0; i < data_list.length; i++) {
+                    var row = tableBody.insertRow();
+                    var snoCell = row.insertCell(0);
+                    var stopIdCell = row.insertCell(1);
+                    var stopNameCell = row.insertCell(2);
+                    var arrivalTimeCell = row.insertCell(3);
+                    var departureTimeCell = row.insertCell(4);
+          
+                    snoCell.textContent = i + 1;
+                    stopIdCell.textContent = data_list[i].stop_id;
+                    stopNameCell.textContent = data_list[i].stop_name;
+                    arrivalTimeCell.textContent = data_list[i].arrival_time;
+                    departureTimeCell.textContent = data_list[i].departure_time;
+                  }
+                } else {
+                  // Handle the error here
+                  console.error("Error:", xhr.status);
+                }
+              }
+            };
+          
+            xhr.open("POST", "/show_time_table/" + route_id + "/" + trip_time + "/" + current_user, true);
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send();
+          }
+          
+          var showTimeTableForms = document.getElementsByClassName("showTimeTable");
+          for (var i = 0; i < showTimeTableForms.length; i++) {
+            showTimeTableForms[i].addEventListener("submit", showTimeTable);
+          }
+          
+    </script>
+    <!--                                  -->
+    <script>
+        function openTimeTable(){
+            document.getElementById("openTimeTableID").style.display="block";
+        }
+        
+        function openAddTrips(){
+            document.getElementById("addTripContainer").style.display="block";
+            document.getElementById("tripAddView").scrollIntoView({ behavior: "smooth" });
+        }
+
+        function openTrips(){
+            if (document.getElementsByClassName('buttonClass').length === 0) {
+                alert("Trip is Empty! Add Trips.");
+            }
+            document.getElementById("tripAddView").style.display="block";
+            document.getElementById("tripAddView").scrollIntoView({ behavior: "smooth" });
+        }
+        
+        function removeButton(event) {
+            if (confirm("Are you sure you want to delete this trip?")) {
+                event.target.parentNode.submit();
+            }
+        }
+        
+        function addButton() {
+
+            /*
+            const form = document.getElementById('addTripContainer');
+            form.submit();
+            */
+
+            /*
+            const speed = document.getElementById('speed-input').value;
+            const frequency = document.getElementById('freq-input').value;
+            const start = document.getElementById('start-input').value;
+            const end = document.getElementById('end-input').value;
+
+            const startHour = Number(start.split(':')[0]);
+            const startMinute = Number(start.split(':')[1]);
+
+            const endHour = Number(end.split(':')[0]);
+            const endMinute = Number(end.split(':')[1]);
+
+            const buttonContainer = document.getElementById('button-container');
+            const existingButtons = buttonContainer.querySelectorAll('.buttonClass');
+            const existingTimes = new Set(); // To store unique button times
+
+            existingButtons.forEach(button => {
+                const time = button.textContent.trim();
+                console.log(time)
+                const actualTime = time.slice(0, -1); // Remove the 'X' symbol
+                existingTimes.add(actualTime);
+            });
+
+            let currentHour = startHour;
+            let currentMinute = startMinute;
+            const newTimes = new Set();
+
+            while(currentHour < endHour || (currentHour==endHour && currentMinute<=endMinute)){
+                const time = currentHour.toString().padStart(2, '0') + ':' + currentMinute.toString().padStart(2, '0');
+                
+                 // Add the time to the set
+                 newTimes.add(time);
+
+                // Update currentHour and currentMinute
+                currentMinute += Number(frequency);
+                if (currentMinute >= 60) {
+                    currentMinute %= 60;
+                    currentHour++;
+                }
+                
+            }
+            
+            const allTimes = new Set([...existingTimes, ...newTimes]);
+            const sortedTimes = Array.from(allTimes).sort();
+
+            buttonContainer.innerHTML = '';
+
+            // Create buttons and append them to the container
+            sortedTimes.forEach(time => {
+                const button = document.createElement('button');
+                button.className = 'buttonClass btn btn-info';
+                button.textContent = time;
+
+                const cross = document.createElement('div');
+                cross.className = 'cross';
+                cross.textContent = 'X';
+
+                button.appendChild(cross);
+                buttonContainer.appendChild(button);
+            });
+
+            // Event delegation to handle cross symbol click
+            buttonContainer.addEventListener('click', function(event) {
+                if (event.target.classList.contains('cross')) {
+                    event.target.parentNode.remove(); // Remove the corresponding button
+                }
+            });*/
+
+        }
+    </script>
+
+    <script>
+        function edit(){
+            //route_id = {{route_id}}
+            //console.log(route_id);
+            let url = "{{ url_for('edit_route', route_id=route_id) }}";
+            window.location.href = url;
+        }
+
+        function searchTable2() {
+            // Declare variables
+            var input, filter, table, tbody, tr, td, i, j, visible;
+            input = document.getElementById("searchInput2");
+            filter = input.value.toUpperCase();
+            table = document.getElementById("dataTable2");
+            if (table) {
+                tbody = table.getElementsByTagName("tbody")[0];
+                tr = tbody.getElementsByTagName("tr");
+    
+                // Loop through all table rows
+                for (i = 0; i < tr.length; i++) {
+                    visible = false;
+    
+                    // Loop through all columns in the current row
+                    for (j = 0; j < tr[i].cells.length; j++) {
+                        td = tr[i].cells[j];
+                        
+                        // Check if the column is S.No or Stop ID
+                        if (j === 0 || j === 1) {
+                            // If the column value starts with the search input
+                            if (td) {
+                                var cellValue = td.innerHTML.trim().toUpperCase();
+                                if (cellValue.indexOf(filter) === 0) {
+                                    visible = true;
+                                    break;
+                                }
+                            }
+                        } else {
+                            // For Stop Name column, use the original search behavior
+                            if (td) {
+                                if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                                    visible = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+    
+                    // Set row visibility based on match
+                    tr[i].style.display = visible ? "" : "none";
+                }
+            }
+        }
+
+        function searchTable() {
+            // Declare variables
+            var input, filter, table, tbody, tr, td, i, j, visible;
+            input = document.getElementById("searchInput");
+            filter = input.value.toUpperCase();
+            table = document.getElementById("dataTable");
+            if (table) {
+                tbody = table.getElementsByTagName("tbody")[0];
+                tr = tbody.getElementsByTagName("tr");
+    
+                // Loop through all table rows
+                for (i = 0; i < tr.length; i++) {
+                    visible = false;
+    
+                    // Loop through all columns in the current row
+                    for (j = 0; j < tr[i].cells.length; j++) {
+                        td = tr[i].cells[j];
+                        
+                        // Check if the column is S.No or Stop ID
+                        if (j === 0 || j === 1) {
+                            // If the column value starts with the search input
+                            if (td) {
+                                var cellValue = td.innerHTML.trim().toUpperCase();
+                                if (cellValue.indexOf(filter) === 0) {
+                                    visible = true;
+                                    break;
+                                }
+                            }
+                        } else {
+                            // For Stop Name column, use the original search behavior
+                            if (td) {
+                                if (td.innerHTML.toUpperCase().indexOf(filter) > -1) {
+                                    visible = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+    
+                    // Set row visibility based on match
+                    tr[i].style.display = visible ? "" : "none";
+                }
+            }
+        }
+    </script>
+
+</body>
+</html>

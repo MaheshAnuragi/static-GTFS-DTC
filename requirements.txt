@@ -1,0 +1,11 @@
+flask-cors
+flask-login
+flask-marshmallow
+flask-sqlalchemy
+folium
+geopy
+gunicorn
+marshmallow-sqlalchemy
+networkx
+pandas
+pip-chill

@@ -1,0 +1,163 @@
+.scrollable-table-container {
+    max-height: 450px; /* Set the maximum desired height for the scrollable area */
+    overflow-y: auto; /* Enable vertical scrolling */
+    overflow-x: auto;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+.scrollable-table-container thead th {
+    position: sticky; /* Make the <th> elements sticky */
+    top: 0; /* Position the sticky header at the top of the container */
+    background-color: #f5f5f5; 
+    z-index: 1;
+}
+
+
+.scrollable-table-container::-webkit-scrollbar {
+    width: 4px;
+    height: 4px;
+    background-color: transparent;
+  }
+  
+  .scrollable-table-container::-webkit-scrollbar-thumb {
+    background-color: rgba(60, 60, 60, 0.507);
+    border-radius: 5px;
+  }
+  
+  .scrollable-table-container::-webkit-scrollbar-thumb:hover {
+    background-color: (60, 60, 60, 0.507);
+  }
+
+.input-group{
+    /* border: 1px solid #ccc; */
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+@media (max-width: 768px) {
+    #mainFrameOne,
+    #mainFrameTwo {
+        width: 100%;
+        height: auto;
+    }
+}
+#searchInput{
+    border-radius: 5px;
+}
+.input-container input {
+    margin: 5px 0 5px;
+}
+
+.add-Existing-Stops{
+    
+    background-color: #fff;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+  
+
+.add-Existing-Stops label {
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.add-Existing-Stops label.my-1 {
+    margin-top: 10px;
+}
+
+.add-Existing-Stops input[type="text"] {
+    width: 100%;
+    padding: 5px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.add-Existing-Stops .bootstrap-select {
+  width: 100%;
+  padding: 10px;
+  font-size: 14px;
+  border-radius: 3px;
+}
+
+.add-new-Stop{
+    
+    background-color: #fff;
+    padding: 10px;
+    margin: 10px;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+  
+
+.add-new-Stop label {
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+    margin-bottom: 5px;
+    text-align: center;
+}
+
+.add-new-Stop label.my-1 {
+    margin-top: 10px;
+}
+
+.add-new-Stop input[type="text"] {
+    width: 100%;
+    padding: 5px;
+    font-size: 14px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+/* Responsive styles for smaller screen sizes */
+@media (max-width: 576px) {
+    .add-new-Stop input[type="text"] {
+      font-size: 12px;
+    }
+}
+
+
+#mapid {
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+  }
+
+
+.dropdown-menu{
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent; 
+}
+
+.dropdown-menu::-webkit-scrollbar {
+    width: 4px;
+    background-color: transparent;
+  }
+  
+.dropdown-menu::-webkit-scrollbar-thumb {
+    background-color: rgba(60, 60, 60, 0.507);
+    border-radius: 5px;
+}
+  
+.dropdown-menu::-webkit-scrollbar-thumb:hover {
+    background-color: (60, 60, 60, 0.507);
+}
