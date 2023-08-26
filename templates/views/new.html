@@ -9,157 +9,193 @@
     <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
     <link rel="stylesheet" href="{{ url_for('static', filename='css/new.css') }}">
     <script src="{{ url_for('static', filename='js/new.js') }}"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/css/bootstrap-select.css" />
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/js/bootstrap-select.js"></script>    
+    <link rel="stylesheet"
+          href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/css/bootstrap-select.css"/>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-select/1.12.1/js/bootstrap-select.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
 </head>
 
 <body>
-      <nav class="navbar navbar-default">
-            <div class="container-fluid">
-              <div class="navbar-header">
-                    <span class="navbar-brand">{{agency}}</span>
-              </div>
-                <ul class="nav navbar-nav navbar-right">
-                    
-                  <li><a href="{{url_for('logout')}}">Log Out</a></li>
-
-                </ul>
-            </div>
-      </nav>
-
-      {% for message in get_flashed_messages()%}
-        <div class="alert alert-success alert-dismissible text-center fade in" style="position: fixed; left: 50%; transform: translate(-50%, -50%);">
-            <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
-            <strong>{{message}}</strong>
+<nav class="navbar navbar-default">
+    <div class="container-fluid">
+        <div class="navbar-header">
+            <span class="navbar-brand">{{ agency }}</span>
         </div>
-      {% endfor %}
+        <ul class="nav navbar-nav navbar-right">
 
-      <form style="margin:15px;" method="POST" enctype=multipart/form-data action =  "{{url_for('uploader')}}">
-        <h1>Upload Gtfs</h1>
+            <li><a href="{{ url_for('logout') }}">Log Out</a></li>
 
-        <input type=file name=file1 accept=".zip,.rar,.7zip">
-        <br>
+        </ul>
+    </div>
+</nav>
 
-        <button type="submit">Upload</button>
-      </form>
-      <hr>
+{% for message in get_flashed_messages() %}
+    <div class="alert alert-success alert-dismissible text-center fade in"
+         style="position: fixed; left: 50%; transform: translate(-50%, -50%);">
+        <a href="#" class="close" data-dismiss="alert" aria-label="close">&times;</a>
+        <strong>{{ message }}</strong>
+    </div>
+{% endfor %}
 
-      
+<form style="margin:15px;" method="POST" enctype=multipart/form-data action="{{ url_for('uploader') }}">
+    <h1>Upload Gtfs</h1>
 
-      <div class="container-fluid" style="padding: 0px 100px 0px">
-        <div class="row" style="margin-top: 25px">
+    <input type=file name=file1 accept=".zip,.rar,.7zip">
+    <br>
 
-          <div class="col-sm-4">
+    <button type="submit" onclick="uploadFile()">Upload</button>
 
-            <label class="my-1 mr-2" >Routes Section</label>
+    <div class="progress" style="margin-top: 15px">
+        <div id="progress-bar" class="progress-bar progress-bar-striped" role="progressbar" style="width: 0%;" aria-valuemin="0" aria-valuemax="100">0%</div>
+    </div>
+    
+</form>
+<hr>
 
-            <select data-live-search="true" data-live-search-style="true" class="selectpicker" name = 'm' id = "routeSelect">
-              {% for route_id, route_name in stops_list.items() %}
-                <option value="{{ route_id }}">{{ route_id }}: {{ route_name }}</option>
-              {% endfor %}
+
+<div class="container-fluid" style="padding: 0px 100px 0px">
+    <div class="row" style="margin-top: 25px">
+
+        <div class="col-sm-4">
+
+            <label class="my-1 mr-2">Routes Section</label>
+
+            <select data-live-search="true" data-live-search-style="true" class="selectpicker" name='m'
+                    id="routeSelect">
+                {% for route_id, route_name in stops_list.items() %}
+                    <option value="{{ route_id }}">{{ route_id }}: {{ route_name }}</option>
+                {% endfor %}
             </select>
 
-            <div class="button-container">  
-              <button type="submit" class="btn btn-primary" onclick="submit()">View</button>
-              <button type="submit" class="btn btn-danger" onclick="deleteRoute()" style="margin:10px;">Delete</button>
+            <div class="button-container">
+                <button type="submit" class="btn btn-primary" onclick="submit()">View</button>
+                <button type="submit" class="btn btn-danger" onclick="deleteRoute()" style="margin:10px;">Delete
+                </button>
             </div>
-            
-          </div>
-          
-          <div class="col-sm-4">
-
-            <form  action = "{{url_for('create')}}" method = "post" id = "form2">
-
-              <div class="form-group" id="myid" style="margin-top:0">
-                <label class="my-1 mr-2"> Create new route</label>
-                <input class="form-control" type="text"  placeholder="Enter route name" name="rt_name" id = "rout_name" required>
-              </div>
-
-              <input type="radio" id="rdbt1" name="select_rdbt" value="rdbt1" onclick="call_button();">
-              <label>Route ID (Default)</label>
-              <input type="radio" id="rdbt2" name="select_rdbt" value="rdbt2" onclick="call_button();">
-              <label >Route ID(Set Manual)</label>
-              
-              <div id="stop_id_div" style="display:none">
-                <label for="ex1">Route Id</label>
-                <input class="form-control" id="ex1" type="text" name='rt_id' value='enter route id' required><br>
-              </div>
-              
-              <div style="display:block; clear:both">
-                <button type="submit" class="btn btn-warning" style="margin:10px" id = "submit2">Create</button>
-              </div>
-            </form>
-          </div>
-
-          <div class="col-sm-2">
-            <label class="my-1 mr-2"> Stops Section</label>
-            <div style="margin:10px">
-              <button type="button" class="btn btn-info" onclick="viewStops()">Stops</button>
-            </div>
-          </div>
 
         </div>
-      </div>
-      
-      <div style="margin:15px;" id = "export_div">
-        <a href="{{url_for('download_gtfs')}}" onClick="alert('It may take several minutes')">Download GTFS</a>
-      </div>
-      <div style="margin:15px;" id = "export_div">
-        <a href="{{url_for('delete_gtfs')}}" onClick="alert('It will delete all database!')">Delete Database</a>
-      </div>
+
+        <div class="col-sm-4">
+
+            <form action="{{ url_for('create') }}" method="post" id="form2">
+
+                <div class="form-group" id="myid" style="margin-top:0">
+                    <label class="my-1 mr-2"> Create new route</label>
+                    <input class="form-control" type="text" placeholder="Enter route name" name="rt_name" id="rout_name"
+                           required>
+                </div>
+                <div class="form-group" id="copy-route-menu" style="margin-top:0">
+                    <label class="my-1 mr-2"> Copy route</label>
+                    <select data-live-search="true" data-live-search-style="true" class="selectpicker" name='copyRoute'
+                            id="copyRouteSelect">
+                        <option value="">-- Select a route --</option>
+                        {% for route_id, route_name in stops_list.items() %}
+                            <option value="{{ route_id }}">{{ route_id }}: {{ route_name }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <input type="radio" id="rdbt1" name="select_rdbt" value="rdbt1" onclick="call_button();">
+                <label>Route ID (Default)</label>
+                <input type="radio" id="rdbt2" name="select_rdbt" value="rdbt2" onclick="call_button();">
+                <label>Route ID(Set Manual)</label>
+
+                <div id="stop_id_div" style="display:none">
+                    <label for="ex1">Route Id</label>
+                    <input class="form-control" id="ex1" type="text" name='rt_id' value='enter route id' required><br>
+                </div>
+
+                <div style="display:block; clear:both">
+                    <button type="submit" class="btn btn-warning" style="margin:10px" id="submit2">Create</button>
+                </div>
+            </form>
+        </div>
+
+        <div class="col-sm-2">
+            <label class="my-1 mr-2"> Stops Section</label>
+            <div style="margin:10px">
+                <button type="button" class="btn btn-info" onclick="viewStops()">Stops</button>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<hr>
+
+<div style="margin:15px; display: inline-block;" id="export_div">
+    <a href="{{ url_for('download_gtfs') }}" onClick="alert('It may take several minutes')">Download GTFS</a>
+</div>
+
+<div style="margin:15px; display: inline-block;" id="export_div">
+    <a href="{{ url_for('delete_gtfs') }}" onClick="alert('It will delete all database!')">Delete Database</a>
+</div>
+
+<script>
+    var socket = io.connect('http://' + document.domain + ':' + location.port);
+
+    socket.on('connection_response', function(data) {
+        console.log(data.data);
+    });
+
+    socket.on('update_progress', function(data) {
+        var progress = data.progress;
+        var progressBar = document.getElementById('progress-bar');
+        progressBar.style.width = progress + '%';
+        progressBar.textContent = progress + '%';
+    });
+</script>
 
 
-    <script>
-      function viewStops(){
+<script>
+    function viewStops() {
         let url = "{{ url_for('stops_view', user_id=user_id) }}";
-            window.location.href = url;
-        }
+        window.location.href = url;
+    }
 
-        function deleteRoute() {
-          var selectElement = document.getElementById("routeSelect");
-          var route_id = selectElement.value;
+    function deleteRoute() {
+        var selectElement = document.getElementById("routeSelect");
+        var route_id = selectElement.value;
 
-          if (confirm("Are you sure you want to delete this Route?")) {
-              if (route_id) {
+        if (confirm("Are you sure you want to delete this Route?")) {
+            if (route_id) {
                 var url = "/delete_route/" + route_id;
                 window.location.href = url;
-              } else {
+            } else {
                 alert("Please select a route to delete.");
-              }
-          }
-        } 
-    </script>
+            }
+        }
+    }
+</script>
 
-    <script>
-      function submit() {
+<script>
+    function submit() {
         var selectElement = document.getElementById("routeSelect");
         var route_id = selectElement.value;
         var route_name = selectElement.options[selectElement.selectedIndex].text;
-    
-        if (route_id === "") {
-          alert('Please select a valid route.');
-        } else {
-          var url = "{{ url_for('view_route', route_id='') }}" + route_id;
-          console.log(rout_name)
-          console.log(route_id, route_name, url);
-          window.open(url, "_self");
-        }
-      }
 
-      function call_button(){
+        if (route_id === "") {
+            alert('Please select a valid route.');
+        } else {
+            var url = "{{ url_for('view_route', route_id='') }}" + route_id;
+            console.log(rout_name)
+            console.log(route_id, route_name, url);
+            window.open(url, "_self");
+        }
+    }
+
+    function call_button() {
         console.log("in call function")
         if (document.getElementById('rdbt1').checked) {
-          console.log('radio_button1 clicked')
-          document.getElementById('stop_id_div').style.display = "none";
+            console.log('radio_button1 clicked')
+            document.getElementById('stop_id_div').style.display = "none";
+
+        } else if (document.getElementById('rdbt2').checked) {
+            console.log('radio_button2 clicked')
+            document.getElementById('stop_id_div').style.display = "block";
 
         }
-
-        else if (document.getElementById('rdbt2').checked) {
-          console.log('radio_button2 clicked')
-          document.getElementById('stop_id_div').style.display = "block";
-
-        }
-      }
-    </script>
+    }
+</script>
 </body>
 </html>

@@ -32,7 +32,7 @@
             <strong>{{message}}</strong>
         </div>
     {% endfor %}
-    
+
     <div class="container-fluid" style="padding: 0px 150px 0px">
         <div class="row">
             <div class="col-sm-6">
@@ -44,7 +44,7 @@
             <div class="col-sm-8" id="map">
                 {{ map|safe }}
             </div>
-            
+
             <div class="col-sm-4">
                 <div class="input-group" style="margin-bottom: 10px;">
                     <input size="60" type="text" class="form-control search-bar" id="searchInput" placeholder="Search... Stop ID / Stop Name" onkeyup="searchTable()">
@@ -80,9 +80,9 @@
 
 
         <div class="row" style="margin-top: 25px; justify-content: center; align-items: center; display: none;" id="tripAddView">
-            
+
             <div class="col-sm-1">
-                
+
                 <div class="button-container">
                     {% for time in trip_times %}
                     <div class="button-wrapper">
@@ -103,13 +103,13 @@
 
             <div class="col-sm-7">
                 <div style="display:none" id="openTimeTableID">
-                    <div style="float: right;">  
+                    <div style="float: right;">
                         <button class="btn btn-danger" type="submit"> Delete Trips </button>
                     </div>
                     <div class="input-group" style="margin-bottom: 10px;">
                         <input size="60" type="text" class="form-control search-bar" id="searchInput2" placeholder="Search... Stop ID / Stop Name" onkeyup="searchTable2()">
                     </div>
-                    
+
                     <div class="scrollable-table-container">
                         <table class="table table-bordered" id="dataTable2">
                             <thead>
@@ -122,22 +122,22 @@
                                 </tr>
                             </thead>
                             <tbody id="tableBody2">
-                            
+
                             </tbody>
                         </table>
                     </div>
                 </div>
-                <br>  
+                <br>
             </div>
-            
+
 
             <div class="col-sm-4">
                 <button style="margin:10px" type="button" class="btn btn-success" onclick="openAddTrips()">Add Trips</button>
-                
+
                 <form id="addTripContainer" style="margin:10px 0; display:none" method="POST">
                     <input type="hidden" name="route_id" value="{{ route_id }}">
                     <input style="margin:10px 0" class="form-control" type="number" name="speed-input" id="speed-input" placeholder="Speed in Km/hr" min="0" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))" required>
-                    <input style="margin:10px 0" class="form-control" type="number" name="freq-input" id="freq-input" placeholder="Frequency in Minutes" min="0" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))" required>    
+                    <input style="margin:10px 0" class="form-control" type="number" name="freq-input" id="freq-input" placeholder="Frequency in Minutes" min="0" onkeypress="return (event.charCode !=8 && event.charCode ==0 || (event.charCode >= 48 && event.charCode <= 57))" required>
                     <label for="start-input" class="form-label">Starting Trip:</label>
                     <input style="margin:5px 0" class="form-control" type="time" name="start-input" id="start-input" required>
                     <label for="end-input" class="form-label">Ending Trip:</label>
@@ -147,19 +147,19 @@
             </div>
 
         </div>
-    
+
     </div>
 
     <!--  for dynamically storing table  -->
     <script>
         function showTimeTable(event) {
             event.preventDefault();
-          
+
             var form = event.target;
             var trip_time = form.getAttribute("data-trip-time");
             var route_id = form.getAttribute("data-route-id");
             var current_user = form.getAttribute("data-current-user");
-          
+
             var xhr = new XMLHttpRequest();
             xhr.onreadystatechange = function () {
               if (xhr.readyState === XMLHttpRequest.DONE) {
@@ -169,7 +169,7 @@
                   // Generate the table rows dynamically
                   var tableBody = document.getElementById("tableBody2");
                   tableBody.innerHTML = ""; // Clear existing rows
-          
+
                   for (var i = 0; i < data_list.length; i++) {
                     var row = tableBody.insertRow();
                     var snoCell = row.insertCell(0);
@@ -177,7 +177,7 @@
                     var stopNameCell = row.insertCell(2);
                     var arrivalTimeCell = row.insertCell(3);
                     var departureTimeCell = row.insertCell(4);
-          
+
                     snoCell.textContent = i + 1;
                     stopIdCell.textContent = data_list[i].stop_id;
                     stopNameCell.textContent = data_list[i].stop_name;
@@ -190,24 +190,24 @@
                 }
               }
             };
-          
+
             xhr.open("POST", "/show_time_table/" + route_id + "/" + trip_time + "/" + current_user, true);
             xhr.setRequestHeader("Content-Type", "application/json");
             xhr.send();
           }
-          
+
           var showTimeTableForms = document.getElementsByClassName("showTimeTable");
           for (var i = 0; i < showTimeTableForms.length; i++) {
             showTimeTableForms[i].addEventListener("submit", showTimeTable);
           }
-          
+
     </script>
     <!--                                  -->
     <script>
         function openTimeTable(){
             document.getElementById("openTimeTableID").style.display="block";
         }
-        
+
         function openAddTrips(){
             document.getElementById("addTripContainer").style.display="block";
             document.getElementById("tripAddView").scrollIntoView({ behavior: "smooth" });
@@ -220,13 +220,13 @@
             document.getElementById("tripAddView").style.display="block";
             document.getElementById("tripAddView").scrollIntoView({ behavior: "smooth" });
         }
-        
+
         function removeButton(event) {
             if (confirm("Are you sure you want to delete this trip?")) {
                 event.target.parentNode.submit();
             }
         }
-        
+
         function addButton() {
 
             /*
@@ -263,7 +263,7 @@
 
             while(currentHour < endHour || (currentHour==endHour && currentMinute<=endMinute)){
                 const time = currentHour.toString().padStart(2, '0') + ':' + currentMinute.toString().padStart(2, '0');
-                
+
                  // Add the time to the set
                  newTimes.add(time);
 
@@ -273,9 +273,9 @@
                     currentMinute %= 60;
                     currentHour++;
                 }
-                
+
             }
-            
+
             const allTimes = new Set([...existingTimes, ...newTimes]);
             const sortedTimes = Array.from(allTimes).sort();
 
@@ -322,15 +322,15 @@
             if (table) {
                 tbody = table.getElementsByTagName("tbody")[0];
                 tr = tbody.getElementsByTagName("tr");
-    
+
                 // Loop through all table rows
                 for (i = 0; i < tr.length; i++) {
                     visible = false;
-    
+
                     // Loop through all columns in the current row
                     for (j = 0; j < tr[i].cells.length; j++) {
                         td = tr[i].cells[j];
-                        
+
                         // Check if the column is S.No or Stop ID
                         if (j === 0 || j === 1) {
                             // If the column value starts with the search input
@@ -351,7 +351,7 @@
                             }
                         }
                     }
-    
+
                     // Set row visibility based on match
                     tr[i].style.display = visible ? "" : "none";
                 }
@@ -367,15 +367,15 @@
             if (table) {
                 tbody = table.getElementsByTagName("tbody")[0];
                 tr = tbody.getElementsByTagName("tr");
-    
+
                 // Loop through all table rows
                 for (i = 0; i < tr.length; i++) {
                     visible = false;
-    
+
                     // Loop through all columns in the current row
                     for (j = 0; j < tr[i].cells.length; j++) {
                         td = tr[i].cells[j];
-                        
+
                         // Check if the column is S.No or Stop ID
                         if (j === 0 || j === 1) {
                             // If the column value starts with the search input
@@ -396,7 +396,7 @@
                             }
                         }
                     }
-    
+
                     // Set row visibility based on match
                     tr[i].style.display = visible ? "" : "none";
                 }
